@@ -433,12 +433,18 @@ def setup_and_start_http_server(host, port, access_config_path,
     log_file.write('listening on {0}:{1} using {2} threads\n'.format(
         host, port, num_threads))
 
+    threads = []
     for i in range(num_threads):
         listener = ListenerThread(host, port, socket, log_file,
                                   should_log_headers, auth_config)
         listener.setDaemon(True)
         listener.start()
-    time.sleep(9e9)
+        threads.append(listener)
+
+    # Wait for all of them to finish
+    for x in threads:
+        x.join()
+
 
 
 def main():
