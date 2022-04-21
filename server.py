@@ -29,6 +29,7 @@ import sys
 import time
 import threading
 import urllib
+import subprocess
 
 
 class SimpleHTTPFileServer(SimpleHTTPRequestHandler):
@@ -120,25 +121,20 @@ class SimpleHTTPFileServer(SimpleHTTPRequestHandler):
         return 'other'
 
     def list_directory(self, path):
-        try:
-            contents = os.listdir(path)
-        except OSError:
-            self.send_error(HTTPStatus.NOT_FOUND, "Could not list directory")
-            return None
-
-        ret = {fn: self._get_directory_list_file_type(os.path.join(path, fn))
-               for fn in contents}
-
-        encoded = json.dumps(ret, sort_keys=True).encode('utf-8')
+        encoded = json.dumps(self._list_files(path), sort_keys=True).encode('utf-8')
 
         f = io.BytesIO()
         f.write(encoded)
         f.seek(0)
         self.send_response(HTTPStatus.OK)
-        self.send_header("Content-type", "text/json; charset=utf-8")
+        self.send_header("Content-type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(encoded)))
         self.end_headers()
         return f
+
+    def _list_files(self, root):
+        output = subprocess.Popen('cd "%s"; find . -type f' % root, stdout=subprocess.PIPE, shell=True).stdout.read()
+        return output.decode().strip().split('\n')
 
     def copy_fileobj_length(self, in_file, out_file, length, bufsize=1024*128):
         while length > 0:
