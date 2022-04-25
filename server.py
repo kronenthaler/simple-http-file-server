@@ -127,7 +127,7 @@ class SimpleHTTPFileServer(SimpleHTTPRequestHandler):
         f.write(encoded)
         f.seek(0)
         self.send_response(HTTPStatus.OK)
-        self.send_header("Content-type", "text/html; charset=utf-8")
+        self.send_header("Content-type", "text/json; charset=utf-8")
         self.send_header("Content-Length", str(len(encoded)))
         self.end_headers()
         return f
@@ -412,8 +412,10 @@ class ListenerThread(threading.Thread):
 
 def setup_and_start_http_server(host, port, access_config_path,
                                 should_log_headers, log_path, should_flush_log,
-                                num_threads):
+                                num_threads, storage_path):
     log_file = setup_log(log_path, should_flush_log)
+    log_file.write("hosting server from: {}".format(storage_path))
+    os.chdir(storage_path)
 
     socket = create_socket(host, port)
 
@@ -442,7 +444,6 @@ def setup_and_start_http_server(host, port, access_config_path,
         x.join()
 
 
-
 def main():
     parser = argparse.ArgumentParser(prog='server.py')
     parser.add_argument('port', type=int, help="The port to listen on")
@@ -457,11 +458,13 @@ def main():
                         help="If set, flushes log to disk after each entry")
     parser.add_argument('--threads', type=int, default=2,
                         help="The number of threads to launch")
+    parser.add_argument('--storage', type=str, default=os.getcwd(),
+                        help='Path where the cache files should be stored')
     args = parser.parse_args()
 
-    setup_and_start_http_server('localhost', args.port, args.access_config,
+    setup_and_start_http_server('0.0.0.0', args.port, args.access_config,
                                 args.log_headers, args.log,
-                                args.should_flush_log, args.threads)
+                                args.should_flush_log, args.threads, args.storage)
 
 
 if __name__ == '__main__':
