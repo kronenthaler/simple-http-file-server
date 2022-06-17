@@ -29,6 +29,7 @@ import sys
 import time
 import threading
 import urllib
+import shutil
 import subprocess
 
 
@@ -108,6 +109,27 @@ class SimpleHTTPFileServer(SimpleHTTPRequestHandler):
         except Exception as e:
             self.log_message("%s", str(e))
             self.send_error(HTTPStatus.METHOD_NOT_ALLOWED)
+            return
+
+        self.send_response(HTTPStatus.OK)
+        self.end_headers()
+
+    def do_DELETE(self):
+        self.log_headers_if_needed()
+
+        path = self.translate_path(self.path)
+        if not os.path.exists(path):
+            self.send_error(HTTPStatus.NOT_FOUND)
+            return
+
+        try:
+            if os.path.isdir(path):
+                shutil.rmtree(path)
+            else:
+                os.remove(path)
+        except Exception as e:
+            self.log_message("%s", str(e))
+            self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR)
             return
 
         self.send_response(HTTPStatus.OK)
