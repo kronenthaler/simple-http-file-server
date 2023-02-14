@@ -22,6 +22,7 @@ import argparse
 import base64
 import json
 import io
+import mimetypes
 import os
 import queue
 import socket
@@ -69,7 +70,9 @@ class SimpleHTTPFileServer(SimpleHTTPRequestHandler):
             return None
         try:
             self.send_response(HTTPStatus.OK)
-            self.send_header("Content-type", 'application/octet-stream')
+            # attempt to use automatic mime type detection and fall back to binary otherwise
+            content_type = mimetypes.MimeTypes().guess_type(path)
+            self.send_header("Content-type", content_type[0] if content_type is not None else 'application/octet-stream')
             fs = os.fstat(f.fileno())
             self.send_header("Content-Length", str(fs[6]))
             self.send_header("Last-Modified",
